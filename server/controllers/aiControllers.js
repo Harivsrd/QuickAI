@@ -5,9 +5,15 @@ import {v2 as cloudinary } from 'cloudinary';
 import FormData from "form-data";
 import axios from "axios";
 import fs from 'fs';
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const pdf = require("pdf-parse");
+import path from "path";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+pdfjsLib.GlobalWorkerOptions.standardFontDataUrl =
+  path.join(__dirname, "../node_modules/pdfjs-dist/standard_fonts/");
 
 
 const AI = new OpenAI({
@@ -34,7 +40,7 @@ export const generateArticle = async (req, res) => {
         }
 
         const response = await AI.chat.completions.create({
-            model: "models/gemini-2.5-flash",
+            model: "gemini-2.5-flash",
             messages: [
                 {
                     role: "user",
@@ -91,7 +97,7 @@ export const generateBlogTitle = async (req, res) => {
         }
 
         const response = await AI.chat.completions.create({
-            model: "models/gemini-2.5-flash",
+            model: "gemini-2.5-flash",
             messages: [
                 {
                     role: "user",
@@ -99,7 +105,7 @@ export const generateBlogTitle = async (req, res) => {
                 }
             ],
             temperature: 0.7,
-            max_tokens: 100
+            max_tokens: 2000
         });
 
         const content = response.choices[0].message.content;
@@ -176,7 +182,7 @@ export const generateImage = async (req, res) => {
 export const removeImageBackground = async (req, res) => {
     try {
         const { userId } = req.auth();
-        const { image } = req.file;
+        const  image  = req.file;
         const plan = req.plan;
 
         if (!userId) {
@@ -221,7 +227,7 @@ export const removeImageObject = async (req, res) => {
     try {
         const { userId } = req.auth();
         const { object } = req.body;
-        const { image } = req.file;
+        const  image  = req.file;
         const plan = req.plan;
 
 
@@ -281,13 +287,23 @@ export const resumeReview = async (req, res) => {
             return res.json({success:false, message: "Resume file size exceeds allowed size (5MB)."})
         }
 
-        const dataBuffer = fs.readFileSync(resume.path)
-        const pdfData = await pdf(dataBuffer)
+        // 🔹 Read PDF
+    const data = new Uint8Array(fs.readFileSync(resume.path));
+    const pdf = await pdfjsLib.getDocument({ data }).promise;
 
-        const prompt = `Review the following resume and provide constructive feedback on its strengths, weakness, and areas for improvement, Resume Content:\n\n${pdfData.text}`
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(" ") + "\n";
+    }
+
+    fs.unlinkSync(resume.path); // cleanup
+
+        const prompt = `Review the following resume and provide constructive feedback on its strengths, weakness, and areas for improvement, Resume Content:\n\n${text}`
 
         const response = await AI.chat.completions.create({
-            model: "models/gemini-2.5-flash",
+            model: "gemini-2.5-flash",
             messages: [
                 {
                     role: "user",
@@ -295,7 +311,7 @@ export const resumeReview = async (req, res) => {
                 }
             ],
             temperature: 0.7,
-            max_tokens: 1000
+            max_tokens: 2000
         });
 
         const content = response.choices[0].message.content;
