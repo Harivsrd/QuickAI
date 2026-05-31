@@ -20,7 +20,7 @@
 
 ## 📖 Overview
 
-QuickAI is a comprehensive full-stack web application designed to provide users with powerful AI-driven capabilities for generating various forms of content. With a clear separation of concerns between its React frontend and Node.js/Express.js backend, QuickAI offers a responsive and secure platform for interacting with cutting-edge AI models, managing user data, and storing generated content. It aims to streamline content creation and provide an engaging user experience for AI enthusiasts and professionals alike.
+QuickAI is a comprehensive full-stack web application designed to provide users with powerful AI-driven capabilities for generating various forms of content. With a clear separation of concerns between its React frontend and Node.js/Express.js backend, QuickAI offers a responsive and secure platform for interacting with cutting-edge AI models, managing user data, and storing generated content. It aims to streamline content creation and provide an engaging user experience for AI enthusiasts and professionals .
 
 ## ✨ Features
 
